@@ -2,6 +2,7 @@ package com.zfx;
 
 import com.sun.org.slf4j.internal.Logger;
 import com.sun.org.slf4j.internal.LoggerFactory;
+import com.zfx.redis.RedisToken;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -15,7 +16,7 @@ public class TinyDBConnectionHandler extends ChannelInboundHandlerAdapter {
 
 
 
-    private ITinyDB impl;
+    private final ITinyDB impl;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -28,7 +29,7 @@ public class TinyDBConnectionHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
-            impl.receive(ctx, (String) msg);
+            impl.receive(ctx, (RedisToken<?>) msg);
         }finally {
             ReferenceCountUtil.release(msg);
         }

@@ -11,11 +11,9 @@ import com.zfx.data.IDatabase;
 public class SetCommand implements ICommand {
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
-            DatabaseValue value = new DatabaseValue();
-            value.setType(DataType.STRING);
-            value.setValue(request.getParam(1));
+            DatabaseValue value = new DatabaseValue(DataType.STRING,request.getParam(1));
             String key = request.getParam(0);
-            db.put(key,value);
+            db.merge(key,value,(oldValue,newValue)->newValue);
             response.addSimpleStr(OK);
 
     }

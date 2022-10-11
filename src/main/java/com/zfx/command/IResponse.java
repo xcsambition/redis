@@ -8,17 +8,22 @@ public interface IResponse {
 
     IResponse addValue(DatabaseValue value);
 
+    IResponse addArrayValue(Collection<DatabaseValue> array);
+
+    IResponse addArray(Collection<String> array);
+
+
     IResponse addBulkStr(String str);
 
     IResponse addSimpleStr(String str);
 
     IResponse addInt(String str);
 
-    IResponse addInt(int i);
+    IResponse addInt(int value);
 
-    IResponse addInt(boolean b);
+    IResponse addInt(boolean value);
+
 
     IResponse addError(String str);
 
-    IResponse addArray(Collection<DatabaseValue> array);
 }

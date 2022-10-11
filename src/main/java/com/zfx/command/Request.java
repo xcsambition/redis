@@ -37,4 +37,9 @@ public class Request implements IRequest{
     public void setParams(List<String> params) {
         this.params = params;
     }
+
+    @Override
+    public String toString() {
+        return command + "[" + params.size() + "]" + params;
+    }
 }

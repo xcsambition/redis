@@ -1,10 +1,15 @@
 package com.zfx.data;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
 public class Database implements IDatabase {
 
-    private Map<String, DatabaseValue> cache = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, DatabaseValue> cache;
+
+    public Database(Map<String, DatabaseValue> cache) {
+        this.cache = cache;
+    }
 
     @Override
     public int size() {
@@ -69,5 +74,19 @@ public class Database implements IDatabase {
     @Override
     public DatabaseValue putIfAbsent(String key, DatabaseValue value) {
         return cache.putIfAbsent(key,value);
+    }
+
+    @Override
+    public DatabaseValue merge(String key, DatabaseValue value, BiFunction<? super DatabaseValue, ? super DatabaseValue, ? extends DatabaseValue> remappingFunction) {
+        return cache.merge(key, value, remappingFunction);
+    }
+
+    @Override
+    public boolean isType(String key, DataType type) {
+        if (cache.containsKey(key)) {
+            return cache.get(key).getType() == type;
+        }else {
+            return true;
+        }
     }
 }

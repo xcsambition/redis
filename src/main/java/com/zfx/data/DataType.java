@@ -6,5 +6,11 @@ public enum DataType {
 
     INTEGER,
 
-    ARRAY
+    LIST,
+
+    SET,
+
+    ZSET,
+
+    HASH
 }

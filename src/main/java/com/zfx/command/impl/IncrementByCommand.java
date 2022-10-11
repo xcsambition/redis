@@ -7,14 +7,15 @@ import com.zfx.data.DataType;
 import com.zfx.data.DatabaseValue;
 import com.zfx.data.IDatabase;
 
-public class IncrementCommand implements ICommand {
+public class IncrementByCommand implements ICommand {
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
         try {
             DatabaseValue value = new DatabaseValue(DataType.STRING,"1");
             value = db.merge(request.getParam(0),value,(oldValue,newValue)-> {
                 if (oldValue!=null) {
-                    oldValue.incrementAndGet(1);
+                    int increment = Integer.parseInt(request.getParam(1));
+                    oldValue.incrementAndGet(increment);
                     return oldValue;
                 }
                 return newValue;

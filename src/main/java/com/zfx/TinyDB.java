@@ -1,33 +1,33 @@
 package com.zfx;
 
-
-
-
+import com.zfx.redis.RedisToken.*;
 import com.zfx.command.*;
 import com.zfx.command.impl.*;
 import com.zfx.data.Database;
+import com.zfx.data.DatabaseValue;
+import com.zfx.redis.RedisToken;
+import com.zfx.redis.RedisTokenType;
+import com.zfx.redis.RequestDecoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
-import org.apache.log4j.Logger;
-
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class TinyDB implements ITinyDB {
 
-    private static Logger logger = Logger.getLogger(TinyDB.class);
     private static final int BUFFER_SIZE = 1024 * 1024;
     // Max message size
     private static final int MAX_FRAME_SIZE = BUFFER_SIZE * 100;
@@ -37,17 +37,17 @@ public class TinyDB implements ITinyDB {
 
     private static final int DEFAULT_PORT = 8031;
 
-    private int port;
+    private final int port;
 
-    private String host;
+    private final String host;
 
     private ChannelFuture future;
 
-    private Database db = new Database();
+    private final Database db = new Database(new ConcurrentHashMap<String, DatabaseValue>());
 
-    private Map<String, ICommand> commands = new HashMap<>();
+    private final Map<String, ICommand> commands = new HashMap<>();
 
-    private Map<String, ChannelHandlerContext> channels = new HashMap<>();
+    private final Map<String, ChannelHandlerContext> channels = new HashMap<>();
 
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
@@ -64,15 +64,33 @@ public class TinyDB implements ITinyDB {
     }
 
     private void init() {
-        commands.put("decr",new CommandWrapper(new DecrementCommand(),1));
-        commands.put("del",new CommandWrapper(new DelCommand(),1));
-        commands.put("echo",new CommandWrapper(new EchoCommand(),1));
-        commands.put("exists",new CommandWrapper(new ExistsCommand(),1));
-        commands.put("get", new CommandWrapper(new GetCommand(), 1));
-        commands.put("incr",new CommandWrapper(new IncrementCommand(),1));
-        commands.put("mget",new CommandWrapper(new MultiGetCommand(),1));
+        // connect
         commands.put("ping", new PingCommand());
-        commands.put("set", new CommandWrapper(new SetCommand(),2));
+        commands.put("echo", new CommandWrapper(new EchoCommand(), 1));
+
+        //server
+        commands.put("flushdb", new FlushDBCommand());
+        commands.put("time", new TimeCommand());
+        //string
+
+        commands.put("get", new CommandWrapper(new GetCommand(), 1));
+        commands.put("mget", new CommandWrapper(new MultiGetCommand(), 1));
+        commands.put("set", new CommandWrapper(new SetCommand(), 2));
+        commands.put("incr", new CommandWrapper(new IncrementCommand(), 1));
+        commands.put("incrby", new CommandWrapper(new IncrementByCommand(), 2));
+        commands.put("decr", new CommandWrapper(new DecrementCommand(), 1));
+        commands.put("decrby", new CommandWrapper(new DecrementByCommand(), 2));
+
+
+        //keys
+        commands.put("del", new CommandWrapper(new DelCommand(), 1));
+        commands.put("exists", new CommandWrapper(new ExistsCommand(), 1));
+
+        //hash
+        commands.put("hset", new CommandWrapper(new HashSetCommand(), 3));
+        commands.put("hget", new CommandWrapper(new HashGetCommand(), 2));
+        commands.put("hgetall", new CommandWrapper(new HashGetAllCommand(), 1));
+
     }
 
     private void start() {
@@ -94,21 +112,26 @@ public class TinyDB implements ITinyDB {
 
             // Bind and start to accept incoming connections.
             future = bootstrap.bind(host, port);
+            future.sync();
+            log.info("adapter started: {}:{}", host, port);
 
 
         } catch (RuntimeException e) {
-                logger.error(e.getMessage());
-                throw new TinyDBException(e);
+            throw new TinyDBException(e);
+        } catch (InterruptedException e) {
+
+            throw new TinyDBException(e);
         }
-        logger.info("adapter started!\n"+host + ",port:"+port);
+
+
     }
 
     public void stop() {
         try {
-            if (future !=null) {
+            if (future != null) {
                 future.channel().close();
             }
-        }finally {
+        } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
@@ -119,10 +142,10 @@ public class TinyDB implements ITinyDB {
 
     @Override
     public void channel(SocketChannel channel) {
-        channel.pipeline().addLast("StringEncoder",new StringEncoder(CharsetUtil.UTF_8));
-        channel.pipeline().addLast("linDelimiter",
-                new DelimiterBasedFrameDecoder(MAX_FRAME_SIZE, true, Delimiters.lineDelimiter()));
-        channel.pipeline().addLast("stringDecoder",new StringDecoder(CharsetUtil.UTF_8));
+        log.debug("new channel:"+ sourceKey(channel));
+
+        channel.pipeline().addLast("StringEncoder", new StringEncoder(CharsetUtil.UTF_8));
+        channel.pipeline().addLast("linDelimiter", new RequestDecoder(MAX_FRAME_SIZE));
         channel.pipeline().addLast(connectionHandler);
     }
 
@@ -131,7 +154,7 @@ public class TinyDB implements ITinyDB {
     public void connect(ChannelHandlerContext ctx) {
         String sourceKey = sourceKey(ctx.channel());
 
-//        logger.debug("client connected : {}",sourceKey);
+        log.debug("client connected : {}",sourceKey);
 
         channels.put(sourceKey, ctx);
 
@@ -147,42 +170,48 @@ public class TinyDB implements ITinyDB {
     }
 
     @Override
-    public void receive(ChannelHandlerContext ctx, String message) {
+    public void receive(ChannelHandlerContext ctx, RedisToken<?> message) {
 
         String sourceKey = sourceKey(ctx.channel());
-//        logger.debug("message received: {}",sourceKey);
-
-        ctx.writeAndFlush(processCommand(parse(message)));
+        log.debug("message received: {}",sourceKey);
+        String s = processCommand(parse(message));
+        ctx.writeAndFlush(s);
 
     }
 
-    private IRequest parse(String message) {
+    private IRequest parse(RedisToken<?> message) {
         Request request = new Request();
-        String[] split = message.split(" ");
-        request.setCommand(split[0]);
-        String[] params = new String[split.length - 1];
-        System.arraycopy(split, 1, params, 0, params.length);
-        request.setParams(Arrays.asList(params));
-        request.setParams(Arrays.asList(params));
+        if (message.getType() == RedisTokenType.ARRAY) {
+            ArrayRedisToken arrayToken = (ArrayRedisToken) message;
+            LinkedList<String> params = new LinkedList<>();
+            for (RedisToken<?> token : arrayToken.getValue()) {
+                params.add(token.getValue().toString());
+            }
+            request.setCommand(params.get(0));
+            request.setParams(params.subList(1, params.size()));
+        }else if (message.getType() == RedisTokenType.UNKNOWN) {
+            UnknownRedisToken unknownToken = (UnknownRedisToken) message;
+            String command = unknownToken.getValue();
+            String[] params = command.split(" ");
+            String[] array = new String[params.length-1];
+            System.arraycopy(params,1,array,0,array.length);
+            request.setParams(Arrays.asList(array));
+        }
         return request;
     }
 
     private String processCommand(IRequest request) {
-        String cmd = request.getCommand();
-
-//        LOGGER.log(Level.INFO, "command:{0}", cmd);
+        log.debug("received command: " + request);
 
         IResponse response = new Response();
-        ICommand command = commands.get(cmd);
+        ICommand command = commands.get(request.getCommand().toLowerCase());
         if (command != null) {
             command.execute(db, request, response);
         } else {
-            response.addError("ERR unknown command '" + cmd + "'");
+            response.addError("ERR unknown command '" + request.getCommand() + "'");
         }
         return response.toString();
-
     }
-
 
 
     private String sourceKey(Channel channel) {
@@ -191,20 +220,13 @@ public class TinyDB implements ITinyDB {
     }
 
 
-
-
-
-
-
-
-
-
     public static void main(String[] args) {
         TinyDB db = new TinyDB();
 //        logger.debug("开始了");
 //        logger.error("error");
         db.init();
         db.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> db.stop()));
 
     }
 

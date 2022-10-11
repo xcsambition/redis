@@ -7,14 +7,15 @@ import com.zfx.data.DataType;
 import com.zfx.data.DatabaseValue;
 import com.zfx.data.IDatabase;
 
-public class IncrementCommand implements ICommand {
+public class DecrementByCommand implements ICommand {
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
         try {
-            DatabaseValue value = new DatabaseValue(DataType.STRING,"1");
+            DatabaseValue value = new DatabaseValue(DataType.STRING,"-1");
             value = db.merge(request.getParam(0),value,(oldValue,newValue)-> {
                 if (oldValue!=null) {
-                    oldValue.incrementAndGet(1);
+                    int decrement = Integer.parseInt(request.getParam(1));
+                    oldValue.decrementAndGet(decrement);
                     return oldValue;
                 }
                 return newValue;
