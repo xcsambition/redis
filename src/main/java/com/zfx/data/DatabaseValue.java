@@ -1,16 +1,18 @@
 package com.zfx.data;
 
+import java.io.Serializable;
+
 public class DatabaseValue {
 
     private DataType type;
 
-    private Object value;
+    private Serializable value;
 
     public DatabaseValue(DataType type) {
         this.type = type;
     }
 
-    public DatabaseValue(DataType type, Object value) {
+    public DatabaseValue(DataType type, Serializable value) {
         this.type = type;
         this.value = value;
     }
@@ -27,7 +29,7 @@ public class DatabaseValue {
         return (T) value;
     }
 
-    public <T> void setValue(T value) {
+    public <T extends Serializable> void setValue(T value) {
         this.value = value;
     }
 
