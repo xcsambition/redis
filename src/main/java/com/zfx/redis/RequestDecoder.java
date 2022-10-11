@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import com.zfx.redis.RedisToken.*;
 
+import javax.swing.table.TableRowSorter;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,7 +36,11 @@ public class RequestDecoder extends LineBasedFrameDecoder {
         ByteBuf readLine = (ByteBuf) super.decode(ctx, buffer);
 
         if (readLine != null) {
-            return readLine.toString(Charset.forName("UTF-8"));
+            try {
+                return readLine.toString(Charset.forName("UTF-8"));
+            }finally {
+                readLine.release();
+            }
         } else {
             return null;
         }
