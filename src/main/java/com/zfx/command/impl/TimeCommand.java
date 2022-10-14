@@ -3,18 +3,29 @@ package com.zfx.command.impl;
 import com.zfx.command.ICommand;
 import com.zfx.command.IRequest;
 import com.zfx.command.IResponse;
+import com.zfx.data.DatabaseValue;
 import com.zfx.data.IDatabase;
 
 import java.util.LinkedList;
-import java.util.List;
+import java.util.stream.Stream;
 
 public class TimeCommand implements ICommand {
+
+    private static final int SCALE = 1000;
+
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
-        List<String> result = new LinkedList<>();
+        LinkedList<String> list = new LinkedList<>();
         long currentTimeMillis = System.currentTimeMillis();
-        result.add(String.valueOf(currentTimeMillis/1000));
-        result.add(String.valueOf(currentTimeMillis%1000));
-        response.addArray(result);
+        Stream<String> longStream = Stream.of(getSeconds(currentTimeMillis),getMicroSeconds(currentTimeMillis));
+        response.addArray(list);
+    }
+
+    private String getSeconds(long currentTimeMillis) {
+        return String.valueOf(currentTimeMillis / SCALE);
+    }
+
+    private String getMicroSeconds(long currentTimeMills) {
+        return String.valueOf(currentTimeMills % SCALE);
     }
 }

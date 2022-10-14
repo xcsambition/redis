@@ -2,7 +2,7 @@ package com.zfx.command;
 
 import java.util.List;
 
-public class Request implements IRequest{
+public class Request implements IRequest {
 
     private String command;
 

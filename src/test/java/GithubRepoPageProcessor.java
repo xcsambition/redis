@@ -1,11 +1,11 @@
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class GithubRepoPageProcessor  {
+public class GithubRepoPageProcessor {
     public static void get(String name) throws Exception {
         //定义一个URL对象，就是你想下载的图片的URL地址
 //        URL url = new URL("iw233.cn/api/random.php");
@@ -21,7 +21,7 @@ public class GithubRepoPageProcessor  {
         //得到图片的二进制数据，以二进制封装得到数据，具有通用性
         byte[] data = readInputStream(is);
         //创建一个文件对象用来保存图片，默认保存当前工程根目录，起名叫Copy.jpg
-        File imageFile = new File("image\\"+name +".jpg");
+        File imageFile = new File("image\\" + name + ".jpg");
         //创建输出流
         FileOutputStream outStream = new FileOutputStream(imageFile);
         //写入数据
@@ -48,7 +48,7 @@ public class GithubRepoPageProcessor  {
     }
 
     public static void main(String[] args) throws Exception {
-        int i =200;
+        int i = 200;
         while (true) {
             Thread.sleep(100);
             get(String.valueOf(i));
@@ -56,7 +56,7 @@ public class GithubRepoPageProcessor  {
         }
     }
 
-//    @Test
+    //    @Test
 //    public void test_getRedirectUrl() throws Exception {
 //        String url="http://www.baidu.com/link?url=ByBJLpHsj5nXx6DESXbmMjIrU5W4Eh0yg5wCQpe3kCQMlJK_RJBmdEYGm0DDTCoTDGaz7rH80gxjvtvoqJuYxK";
 //        String expectUrl="http://www.zhihu.com/question/20583607/answer/16597802";

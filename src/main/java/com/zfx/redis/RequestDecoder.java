@@ -1,11 +1,10 @@
 package com.zfx.redis;
 
+import com.zfx.redis.RedisToken.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LineBasedFrameDecoder;
-import com.zfx.redis.RedisToken.*;
 
-import javax.swing.table.TableRowSorter;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,10 +21,6 @@ public class RequestDecoder extends LineBasedFrameDecoder {
         super(maxLength);
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        super.channelRead(ctx,msg);
-    }
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
@@ -38,7 +33,7 @@ public class RequestDecoder extends LineBasedFrameDecoder {
         if (readLine != null) {
             try {
                 return readLine.toString(Charset.forName("UTF-8"));
-            }finally {
+            } finally {
                 readLine.release();
             }
         } else {
@@ -81,7 +76,7 @@ public class RequestDecoder extends LineBasedFrameDecoder {
     private ArrayRedisToken parseArray(ChannelHandlerContext ctx, ByteBuf buffer, int size) throws Exception {
         List<RedisToken<?>> response = new LinkedList<RedisToken<?>>();
 
-        for (int i = 0 ; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             String line = readLine(ctx, buffer);
 
             if (line != null) {

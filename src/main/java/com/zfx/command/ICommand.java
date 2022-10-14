@@ -1,6 +1,5 @@
 package com.zfx.command;
 
-import com.zfx.data.Database;
 import com.zfx.data.IDatabase;
 
 public interface ICommand {

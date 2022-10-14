@@ -5,10 +5,10 @@
     -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-<!--            <pattern>[%level]  %cyan([%thread]) %boldGreen(%logger{15}) - %msg %n</pattern>-->
-<!--            <pattern>%d{HH:mm:ss} [%15.15t] %-40.40logger{39} : %m%n</pattern>-->
-            <pattern>%d{HH:mm:ss} %boldGreen([%-5level]) [%thread]  %logger{10} : %msg%n</pattern>
-<!--            <pattern>%d{MM-dd HH:mm:ss.SSS} [%5level] %4line %40.40logger{39}.%-30.30method : %m%n</pattern>-->
+            <!--            <pattern>[%level]  %cyan([%thread]) %boldGreen(%logger{15}) - %msg %n</pattern>-->
+            <!--            <pattern>%d{HH:mm:ss} [%15.15t] %-40.40logger{39} : %m%n</pattern>-->
+            <pattern>%d{HH:mm:ss} %boldGreen([%-5level]) [%thread] %logger{10} : %msg%n</pattern>
+            <!--            <pattern>%d{MM-dd HH:mm:ss.SSS} [%5level] %4line %40.40logger{39}.%-30.30method : %m%n</pattern>-->
 
         </encoder>
     </appender>
@@ -17,7 +17,7 @@
         <appender-ref ref="Console"/>
     </logger>
 
-    <logger name="io.netty" level="DEBUG" additivity="false">
+    <logger name="io.netty" level="INFO" additivity="false">
         <appender-ref ref="Console"/>
     </logger>
 

@@ -3,6 +3,8 @@ package com.zfx.command;
 import com.zfx.data.DatabaseValue;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
 
 public class Response implements IResponse {
 
@@ -27,10 +29,18 @@ public class Response implements IResponse {
                 case STRING:
                     addBulkStr(value.getValue());
                     break;
+                case HASH:
+                    Map<String, String> map = value.getValue();
+                    LinkedList<String> list = new LinkedList<>();
+                    map.forEach((k, v) -> {
+                        list.add(k);
+                        list.add(v);
+                    });
+                    addArray(list);
                 default:
                     break;
             }
-        }else {
+        } else {
             addBulkStr(null);
         }
         return this;
@@ -58,13 +68,16 @@ public class Response implements IResponse {
         sb.append(INTEGER).append(str).append(DELIMITER);
         return this;
     }
+
     @Override
     public IResponse addInt(int value) {
         sb.append(INTEGER).append(value).append(DELIMITER);
         return this;
-    }@Override
+    }
+
+    @Override
     public IResponse addInt(boolean value) {
-        sb.append(INTEGER).append(value ? "1":"0").append(DELIMITER);
+        sb.append(INTEGER).append(value ? "1" : "0").append(DELIMITER);
         return this;
     }
 
@@ -91,12 +104,12 @@ public class Response implements IResponse {
 
     @Override
     public IResponse addArray(Collection<String> array) {
-        if (array!=null) {
+        if (array != null) {
             sb.append(ARRAY).append(array.size()).append(DELIMITER);
             for (String value : array) {
                 addBulkStr(value);
             }
-        }else {
+        } else {
             sb.append(ARRAY).append(0).append(DELIMITER);
         }
         return this;
