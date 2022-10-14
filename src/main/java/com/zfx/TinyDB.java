@@ -16,7 +16,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
@@ -86,6 +85,7 @@ public class TinyDB implements ITinyDB {
         commands.put("decrby", new CommandWrapper(new DecrementByCommand()));
         commands.put("getset",new CommandWrapper(new GetSetCommand()));
         commands.put("mset",new CommandWrapper(new MultiSetCommand()));
+        commands.put("strlen",new CommandWrapper(new StringLengthCommand()));
 
         // keys
         commands.put("del", new CommandWrapper(new DeleteCommand()));
