@@ -7,12 +7,13 @@ import com.zfx.command.IResponse;
 import com.zfx.data.DatabaseValue;
 import com.zfx.data.IDatabase;
 
+import static com.zfx.data.DatabaseValue.string;
+
 @ParamLength(2)
 public class SetCommand implements ICommand {
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
-        String key = request.getParam(0);
-        DatabaseValue value = DatabaseValue.string(request.getParam(1));
-        db.merge(key, value, (oldValue, newValue) -> newValue);
+        db.put(request.getParam(0), string(request.getParam(1)));
+        response.addSimpleStr(OK);
     }
 }

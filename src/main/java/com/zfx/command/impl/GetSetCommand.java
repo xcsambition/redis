@@ -17,7 +17,7 @@ public class GetSetCommand implements ICommand {
     @Override
     public void execute(IDatabase db, IRequest request, IResponse response) {
         DatabaseValue value = db.get(request.getParam(0));
-        db.merge(request.getParam(0), string(request.getParam(1)), (oldValue, newValue) -> newValue);
+        db.put(request.getParam(0),string(request.getParam(1)));
         response.addValue(value);
 
     }
