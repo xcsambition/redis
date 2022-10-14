@@ -84,6 +84,8 @@ public class TinyDB implements ITinyDB {
         commands.put("incrby", new CommandWrapper(new IncrementByCommand()));
         commands.put("decr", new CommandWrapper(new DecrementCommand()));
         commands.put("decrby", new CommandWrapper(new DecrementByCommand()));
+        commands.put("getset",new CommandWrapper(new GetSetCommand()));
+        commands.put("mset",new CommandWrapper(new MultiSetCommand()));
 
         // keys
         commands.put("del", new CommandWrapper(new DeleteCommand()));
