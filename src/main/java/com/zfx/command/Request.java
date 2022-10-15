@@ -1,5 +1,6 @@
 package com.zfx.command;
 
+import java.util.Collections;
 import java.util.List;
 
 public class Request implements IRequest {
@@ -9,6 +10,11 @@ public class Request implements IRequest {
     private List<String> params;
 
     private static final String DELIMITER = "\r\n";
+
+    public Request(String command, List<String> params) {
+        this.command = command;
+        this.params = params;
+    }
 
     @Override
     public String getCommand() {
@@ -27,16 +33,9 @@ public class Request implements IRequest {
 
     @Override
     public List<String> getParams() {
-        return params;
+        return Collections.unmodifiableList(params);
     }
 
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
-    public void setParams(List<String> params) {
-        this.params = params;
-    }
 
     @Override
     public String toString() {

@@ -1,5 +1,7 @@
 package com.zfx;
 
+import com.github.tonivade.resp.RespServer;
+import com.github.tonivade.resp.command.CommandSuite;
 import com.zfx.command.*;
 import com.zfx.command.impl.*;
 import com.zfx.data.Database;
@@ -183,32 +185,31 @@ public class TinyDB implements ITinyDB {
     }
 
     private IRequest parseMessage(RedisToken<?> message) {
-        Request request = new Request();
+        IRequest request = null;
         if (message.getType() == RedisTokenType.ARRAY) {
-            parseArray((ArrayRedisToken) message, request);
+            request = parseArray((ArrayRedisToken) message);
         } else if (message.getType() == RedisTokenType.UNKNOWN) {
-            parseLine(message, request);
+            request = parseLine(message);
         }
         return request;
     }
 
-    private static void parseLine(RedisToken<?> message, Request request) {
+    private IRequest parseLine(RedisToken<?> message) {
         UnknownRedisToken unknownToken = (UnknownRedisToken) message;
         String command = unknownToken.getValue();
         String[] params = command.split(" ");
         String[] array = new String[params.length - 1];
         System.arraycopy(params, 1, array, 0, array.length);
-        request.setParams(Arrays.asList(array));
+        return new Request(params[0],Arrays.asList(array));
     }
 
-    private void parseArray(ArrayRedisToken message, Request request) {
+    private IRequest parseArray(ArrayRedisToken message) {
         ArrayRedisToken arrayToken = message;
         LinkedList<String> params = new LinkedList<>();
         for (RedisToken<?> token : arrayToken.getValue()) {
             params.add(token.getValue().toString());
         }
-        request.setCommand(params.get(0));
-        request.setParams(params.subList(1, params.size()));
+        return new Request(params.get(0),params.subList(1, params.size()));
     }
 
     private String processCommand(IRequest request) {
@@ -232,6 +233,7 @@ public class TinyDB implements ITinyDB {
 
 
     public static void main(String[] args) {
+
         TinyDB db = new TinyDB();
         db.init();
         db.start();
