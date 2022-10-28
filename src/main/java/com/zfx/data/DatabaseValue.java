@@ -1,139 +1,132 @@
 package com.zfx.data;
 
+import com.github.tonivade.purefun.Equal;
+import com.github.tonivade.purefun.data.ImmutableList;
+import com.github.tonivade.purefun.data.ImmutableMap;
+import com.github.tonivade.purefun.data.ImmutableSet;
+import com.github.tonivade.purefun.data.Sequence;
+import com.github.tonivade.resp.protocol.SafeString;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+
+import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * @author zfx
+ * 数据 值
  */
 public class DatabaseValue {
 
-    private DataType type;
+    private final DataType type;
 
-    private Object value;
+    private final Object value;
 
-    public DatabaseValue(DataType type) {
-        this(type, null);
+    private final Instant expiredAt;
+
+    private static final Equal<DatabaseValue> EQUAL =
+            Equal.<DatabaseValue>of().comparing(v -> v.type).comparing(v -> v.value);
+
+    private DatabaseValue(DataType type, Object value) {
+        this(type, value, null);
     }
 
-    public DatabaseValue(DataType type, Object value) {
+    private DatabaseValue(DataType type, Object value, Instant expiredAt) {
         this.type = type;
         this.value = value;
+        this.expiredAt = expiredAt;
     }
 
-    /**
-     * @return the type
-     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, value);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EQUAL.applyTo(this, obj);
+    }
+
+    @Override
+    public String toString() {
+        return "DatabaseValue [type=" + type + ", value=" + value + "]";
+    }
+
     public DataType getType() {
         return type;
     }
 
-    /**
-     * @param type the type to set
-     */
-    public void setType(DataType type) {
-        this.type = type;
-    }
 
-    /**
-     * @return the value
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T getValue() {
+    private <T> T getValue() {
         return (T) value;
     }
 
-    /**
-     * @param value the value to set
-     */
-    public <T> void setValue(T value) {
-        this.value = value;
+
+    public Instant getExpiredAt() {
+        return expiredAt;
     }
 
-    /**
-     * @return
-     * @throws NumberFormatException
-     */
-    public int incrementAndGet(int increment) throws NumberFormatException {
-        int i = Integer.parseInt(value.toString()) + increment;
-        this.value = String.valueOf(i);
-        return i;
-    }
+    private void requireType(DataType type) {
+        if (this.type != type) {
+            throw new IllegalStateException("invalid type: " + type);
+        }
 
-    /**
-     * @return
-     * @throws NumberFormatException
-     */
-    public int decrementAndGet(int decrement) throws NumberFormatException {
-        int i = Integer.parseInt(value.toString()) - decrement;
-        this.value = String.valueOf(i);
-        return i;
     }
-
-    /* (non-Javadoc)
-     * @see java.lang.Object#hashCode()
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
-        return result;
-    }
-
-    /* (non-Javadoc)
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        DatabaseValue other = (DatabaseValue) obj;
-        if (type != other.type)
-            return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
-    }
-
 
     public static DatabaseValue string(String value) {
+        return string(SafeString.safeString(value));
+    }
+
+    public static DatabaseValue string(SafeString value) {
         return new DatabaseValue(DataType.STRING, value);
     }
 
-    public static DatabaseValue list(String... values) {
-        return new DatabaseValue(DataType.LIST,
-                Stream.of(values).collect(Collectors.toCollection(LinkedList::new)));
+
+    public static DatabaseValue list(Sequence<SafeString> values) {
+        return new DatabaseValue(DataType.LIST,values.asList());
+    }
+    public static DatabaseValue hash(Collection<SafeString> values) {
+        return new DatabaseValue(DataType.LIST,ImmutableList.from(requireNonNull(values).stream()));
     }
 
-    public static DatabaseValue set(String... values) {
-        return new DatabaseValue(DataType.SET,
-                Stream.of(values).collect(Collectors.toCollection(LinkedHashSet::new)));
+    public static DatabaseValue list(SafeString... values) {
+        return new DatabaseValue(DataType.LIST, ImmutableList.from(Stream.of(values)));
     }
 
-    public static DatabaseValue zset(String... values) {
-        return new DatabaseValue(DataType.ZSET,
-                Stream.of(values).collect(Collectors.toCollection(TreeSet::new)));
+    public SafeString getString() {
+        requireType(DataType.STRING);
+        return (SafeString) getValue();
     }
 
-    @SafeVarargs
-    public static DatabaseValue hash(Map.Entry<String, String>... values) {
-        return new DatabaseValue(
-                DataType.HASH,
-                Stream.of(values).collect(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    public ImmutableMap<SafeString, SafeString> getHash() {
+        requireType(DataType.HASH);
+        return getValue();
     }
 
-    public static Map.Entry<String, String> entry(String key, String value) {
-        return new AbstractMap.SimpleEntry<String, String>(key, value);
+    public ImmutableList<SafeString> getList() {
+        requireType(DataType.LIST);
+        return getValue();
+    }
+
+    public ImmutableSet<SafeString> getSet() {
+        requireType(DataType.SET);
+        return getValue();
+    }
+
+    public NavigableSet<Map.Entry<Double, SafeString>> getSortedSet() {
+        requireType(DataType.ZSET);
+        return getValue();
+    }
+
+    public DatabaseValue expiredAt(Instant instant) {
+        return new DatabaseValue(this.type,this.value,instant);
+    }
+
+    public boolean isExpired(Instant now) {
+        if (expiredAt !=null) {
+            return now.isAfter(expiredAt);
+        }
+        return false;
     }
 }

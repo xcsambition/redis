@@ -1,21 +1,24 @@
 package com.zfx.data;
 
 /**
- * @author zfx
  * 支持的数据类型
  */
-
 public enum DataType {
 
-    STRING,
+    STRING("string"),
+    LIST("list"),
+    SET("set"),
+    ZSET("zset"),
+    HASH("hash"),
+    NONE("none");
 
-    INTEGER,
+    private final String text;
 
-    LIST,
+    DataType(String text) {
+        this.text = text;
+    }
 
-    SET,
-
-    ZSET,
-
-    HASH
+    public String text() {
+        return text;
+    }
 }
